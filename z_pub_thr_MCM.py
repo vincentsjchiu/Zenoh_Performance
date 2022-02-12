@@ -89,10 +89,10 @@ while True:
      data=data3
      pattern=0
      
-    start = datetime.datetime.now()    
+    #start = datetime.datetime.now()    
     session.put(rid, data, congestion_control=congestion_control)
     pattern+=1
     data=None
     time.sleep(0.01)
-    end= datetime.datetime.now()
+    #end= datetime.datetime.now()
     #print(end-start)
