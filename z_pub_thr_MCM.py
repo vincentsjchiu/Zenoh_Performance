@@ -36,6 +36,10 @@ parser.add_argument('--listener', '-l', dest='listener',
                     action='append',
                     type=str,
                     help='Locators to listen on.')
+parser.add_argument('--key', '-k', dest='key',
+                    default='/demo/example/zenoh-python-pub',
+                    type=str,
+                    help='The key expression to publish onto.')
 parser.add_argument('payload_size',
                     type=int,
                     help='Sets the size of the payload to publish.')
@@ -53,7 +57,7 @@ if args.peer is not None:
 if args.listener is not None:
     conf.insert_json5("listeners", json.dumps(args.listener))
 size = args.payload_size
-
+key = args.key
 # zenoh-net code  --- --- --- --- --- --- --- --- --- --- ---
 
 # initiate logging
@@ -76,10 +80,11 @@ congestion_control = CongestionControl.Block
 
 session = zenoh.open(conf)
 
-rid = session.declare_expr('/demo/example/zenoh-python-pub')#('/test/thr')
+rid = session.declare_expr(key)
 
 pub = session.declare_publication(rid)
 pattern=1
+print("Declaring key expression '{}'...".format(key))
 while True:
     if pattern%3 ==1:
      data=data1

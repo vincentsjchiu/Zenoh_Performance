@@ -17,6 +17,7 @@ import argparse
 import json
 import zenoh
 import os
+import re
 from zenoh import  Reliability, SubMode
 
 # --- Command line argument parsing --- --- --- --- --- ---
@@ -49,6 +50,10 @@ parser.add_argument('--number', '-n', dest='number',
                     action='append',
                     type=int,
                     help='Number of messages in each throughput measurements.')
+parser.add_argument('--key', '-k', dest='key',
+                    default='/demo/example/**',
+                    type=str,
+                    help='The key expression to subscribe to.')
 parser.add_argument('--config', '-c', dest='config',
                     metavar='FILE',
                     type=str,
@@ -64,6 +69,7 @@ if args.listener is not None:
     conf.insert_json5("listeners", json.dumps(args.listener))
 m = args.samples
 n = args.number
+key = args.key
 print(m)
 print(n)
 # zenoh-net code  --- --- --- --- --- --- --- --- --- --- ---
@@ -72,6 +78,7 @@ print(n)
 def print_stats(start,id):
     stop = datetime.now()
     #print("{:.6f} msgs/sec".format(n / (stop - start).total_seconds()))
+    print(">> [Subscriber] Received {})".format(id))
     print(size)
     print((stop - start).total_seconds())
     print("{:.6f} M bytes/sec".format((size/(1024*1024)) / (stop - start).total_seconds()))
@@ -101,7 +108,7 @@ def Checdataloss(data,index,id):
      if b!=target:
          p=createfolder('D:\\examples\\data\\',id)
          now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
-         print(str(now))
+         #print(str(now))
          f = open(p+'\\dataloss.txt_'+str(now)+'.txt','a')
          f.write(str(b)+' '+str(target)+'\n')      
          f.close()
@@ -124,9 +131,12 @@ def createfolder(folderpath,id):
     return path
 
 def listener(sample):
+#    print(">> [Subscriber] Received {})"
+#          .format(sample.key_expr))
     global n, m, count,thrcount, start, nm ,size,f,pubstart,substart,sourceid
     if thrcount == 0:
-        sourceid=1
+        sourceid=''.join(re.findall('[0-9]',str(sample.key_expr)))
+        print(sourceid)
         ctime = '(not specified)' if sample.source_info is None or sample.timestamp is None else datetime.fromtimestamp(
         sample.timestamp.time)
         pubstart=ctime
@@ -174,7 +184,7 @@ zenoh.init_logger()
 
 session = zenoh.open(conf)
 
-rid = session.declare_expr('/demo/example/zenoh-python-pub')#('/test/thr')
+rid = session.declare_expr(key)#('/test/thr')
 teststart=datetime.now()
 sub = session.subscribe(rid, listener, reliablity=Reliability.Reliable, mode=SubMode.Push)
 
