@@ -45,7 +45,7 @@ parser.add_argument('--samples', '-s', dest='samples',
                     type=int,
                     help='Number of throughput measurements.')
 parser.add_argument('--number', '-n', dest='number',
-                    default=100,
+                    default=1000,
                     metavar='NUMBER',
                     action='append',
                     type=int,
@@ -80,6 +80,8 @@ def print_stats(start,id):
     #print("{:.6f} msgs/sec".format(n / (stop - start).total_seconds()))
     print(">> [Subscriber] Received {})".format(id))
     print(size)
+    print(stop)
+    print(start)
     print((stop - start).total_seconds())
     print("{:.6f} M bytes/sec".format((size/(1024*1024)) / (stop - start).total_seconds()))
     p=createfolder('D:\\examples\\data\\',id)
@@ -133,52 +135,43 @@ def createfolder(folderpath,id):
 def listener(sample):
 #    print(">> [Subscriber] Received {})"
 #          .format(sample.key_expr))
-    global n, m, count,thrcount, start, nm ,size,f,pubstart,substart,sourceid
-    if thrcount == 0:
-        sourceid=''.join(re.findall('[0-9]',str(sample.key_expr)))
-        print(sourceid)
-        ctime = '(not specified)' if sample.source_info is None or sample.timestamp is None else datetime.fromtimestamp(
-        sample.timestamp.time)
-        pubstart=ctime
-        #time.sleep(1)
+    global n, m, count,thrcount, start, nm ,size,f,now,substart ,pubstart,sourceid 
+    sourceid=''.join(re.findall('[0-9]',str(sample.key_expr)))
+    ctime = '(not specified)' if sample.source_info is None or sample.timestamp is None else datetime.fromtimestamp(
+    sample.timestamp.time)
+    pubstart=ctime
+    if thrcount == 0: 
         start = datetime.now()
-        Checdataloss(sample.payload,count,sourceid)
-        Checdlatency(start,pubstart,sourceid)
-        size += sys.getsizeof(sample.payload)
+        substart=start
         #print(putstart-start)
         #print(size)
         #f = open('C:\\examples\\data\\'+str(count)+'.txt','wb')
         #f.write(sample.payload)
         #f.close()
-        count += 1
-        thrcount +=1
-    elif thrcount < n:       
-        ctime = '(not specified)' if sample.source_info is None or sample.timestamp is None else datetime.fromtimestamp(
-        sample.timestamp.time)
-        pubstart=ctime
+        
+    elif thrcount < n:               
         substart = datetime.now()
-        Checdataloss(sample.payload,count,sourceid)
-        Checdlatency(substart,pubstart,sourceid)
         #print(substart)
         #print(putstart)
         #print(substart-putstart)
-        #print(sys.getsizeof(sample.payload))
-        size += sys.getsizeof(sample.payload)
+        #print(sys.getsizeof(sample.payload))      
         #print(sample)
         #f = open('C:\\examples\\data\\'+str(count)+'.txt','wb')
         #f.write(sample.payload)
         #f.close()
-        count += 1
-        thrcount +=1
         #print(count)
     else:
         print_stats(start,sourceid)
         nm += 1
-        thrcount = 0
-        size=0
-        
+        thrcount = -1
+        size=0    
+    Checdataloss(sample.payload,count,sourceid)   
+    Checdlatency(substart,pubstart,sourceid)
+    size += sys.getsizeof(sample.payload)
+    count += 1
+    thrcount +=1
 
-
+    
 # initiate logging
 zenoh.init_logger()
 
