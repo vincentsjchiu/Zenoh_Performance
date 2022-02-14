@@ -18,6 +18,7 @@ import json
 import zenoh
 import os
 import re
+import hashlib
 from zenoh import  Reliability, SubMode
 
 # --- Command line argument parsing --- --- --- --- --- ---
@@ -45,7 +46,7 @@ parser.add_argument('--samples', '-s', dest='samples',
                     type=int,
                     help='Number of throughput measurements.')
 parser.add_argument('--number', '-n', dest='number',
-                    default=1000,
+                    default=100,
                     metavar='NUMBER',
                     action='append',
                     type=int,
@@ -75,54 +76,59 @@ print(n)
 # zenoh-net code  --- --- --- --- --- --- --- --- --- --- ---
 
 
-def print_stats(start,id):
+def print_stats(id):
     stop = datetime.now()
     #print("{:.6f} msgs/sec".format(n / (stop - start).total_seconds()))
     print(">> [Subscriber] Received {})".format(id))
-    print(size)
+    print(size[int(id)])
     print(stop)
-    print(start)
-    print((stop - start).total_seconds())
-    print("{:.6f} M bytes/sec".format((size/(1024*1024)) / (stop - start).total_seconds()))
+    print(start[int(id)])
+    print((stop - start[int(id)]).total_seconds())
+    print("{:.6f} M bytes/sec".format((size[int(id)]/(1024*1024)) / (stop - start[int(id)]).total_seconds()))
     p=createfolder('D:\\examples\\data\\',id)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
     f = open(p+'\\throughput.txt_'+str(now)+'.txt','a')
-    f.write("{:.6f}\n".format((size/(1024*1024)) / (stop - start).total_seconds()))
+    f.write("{:.6f}\n".format((size[int(id)]/(1024*1024)) / (stop - start[int(id)]).total_seconds()))
     f.close()
 
-thrcount=0
-count = 0
+thrcount=[0]*8
 teststart=None
 substart = None
 pubstart=None
 now=None
 nm = 0
-size=0
+size=[0]*8
+start=[None]*8
+lastdataindex=[0]*8
+def Checdataloss(data,id):
+    j_data={}
+    j_data=json.loads(data)
+    if (j_data['dataindex']-lastdataindex[int(id)])!=1:
+       print(j_data['dataindex']-lastdataindex[int(id)]) 
+       print('ID :'+id+' loss data')
+       p=createfolder('D:\\examples\\data\\',id)
+       now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+       f = open(p+'\\dataloss.txt_'+str(now)+'.txt','a')
+       f.write(str(j_data['dataindex'])+' '+str(lastdataindex[int(id)]))      
+       f.close()
+    checkmd5=j_data['md5']
+    rawdata=j_data['payload']
+    if j_data['md5']!=hashlib.md5(j_data['payload'].encode('utf-8')).hexdigest():
+       print('ID :'+id+' data content is wrong')
+       p=createfolder('D:\\examples\\data\\',id)
+       now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+       f = open(p+'\\datawring.txt_'+str(now)+'.txt','a')
+       f.write(j_data['md5']+' '+hashlib.md5(j_data['payload'].encode('utf-8')).hexdigest())      
+       f.close()
+    lastdataindex[int(id)]=j_data['dataindex']
 
-def Checdataloss(data,index,id):    
-    if index%3 ==0:
-      target=1;
-    elif index%3==1:
-      target=2
-    else:
-      target=3
-    for b in data:
-     if b!=target:
-         p=createfolder('D:\\examples\\data\\',id)
-         now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
-         #print(str(now))
-         f = open(p+'\\dataloss.txt_'+str(now)+'.txt','a')
-         f.write(str(b)+' '+str(target)+'\n')      
-         f.close()
-         break
         
-def Checdlatency(substarttime,pubstarttime,id):    
-    if (substarttime-pubstarttime).total_seconds() >1:
-         now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
-         p=createfolder('D:\\examples\\data\\',id)
-         f = open(p+'\\overlatency_'+str(now)+'.txt','a')
-         f.write('{:.6f}\n'.format((substarttime-pubstarttime).total_seconds()))
-         f.close()
+def Checdlatency(substarttime,pubstarttime,id):       
+     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+     p=createfolder('D:\\examples\\data\\',id)
+     f = open(p+'\\overlatency_'+str(now)+'.txt','a')
+     f.write('{:.6f}\n'.format((substarttime-pubstarttime).total_seconds()))
+     f.close()
 
 def createfolder(folderpath,id):
     global path
@@ -135,41 +141,26 @@ def createfolder(folderpath,id):
 def listener(sample):
 #    print(">> [Subscriber] Received {})"
 #          .format(sample.key_expr))
-    global n, m, count,thrcount, start, nm ,size,f,now,substart ,pubstart,sourceid 
+    global n, m, nm ,size,f,now,substart ,pubstart,sourceid
     sourceid=''.join(re.findall('[0-9]',str(sample.key_expr)))
     ctime = '(not specified)' if sample.source_info is None or sample.timestamp is None else datetime.fromtimestamp(
     sample.timestamp.time)
     pubstart=ctime
-    if thrcount == 0: 
-        start = datetime.now()
-        substart=start
-        #print(putstart-start)
-        #print(size)
-        #f = open('C:\\examples\\data\\'+str(count)+'.txt','wb')
-        #f.write(sample.payload)
-        #f.close()
-        
-    elif thrcount < n:               
-        substart = datetime.now()
-        #print(substart)
-        #print(putstart)
-        #print(substart-putstart)
-        #print(sys.getsizeof(sample.payload))      
-        #print(sample)
-        #f = open('C:\\examples\\data\\'+str(count)+'.txt','wb')
-        #f.write(sample.payload)
-        #f.close()
-        #print(count)
+    if thrcount[int(sourceid)] == 0: 
+        start[int(sourceid)] = datetime.now()
+        substart=start[int(sourceid)] 
+    elif thrcount[int(sourceid)] < n:               
+        substart = datetime.now()        
     else:
-        print_stats(start,sourceid)
+        print_stats(sourceid)
         nm += 1
-        thrcount = -1
-        size=0    
-    Checdataloss(sample.payload,count,sourceid)   
+        thrcount[int(sourceid)] = -1
+        size[int(sourceid)]=0    
+    Checdataloss(sample.payload,sourceid)   
     Checdlatency(substart,pubstart,sourceid)
-    size += sys.getsizeof(sample.payload)
-    count += 1
-    thrcount +=1
+    size[int(sourceid)] += sys.getsizeof(sample.payload)
+    #print(size[int(sourceid)])
+    thrcount[int(sourceid)] +=1
 
     
 # initiate logging

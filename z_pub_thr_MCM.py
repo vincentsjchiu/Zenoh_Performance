@@ -16,6 +16,8 @@ import datetime
 import argparse
 import json
 import zenoh
+import random
+import hashlib
 from zenoh import config, CongestionControl
 
 # --- Command line argument parsing --- --- --- --- --- ---
@@ -64,18 +66,6 @@ key = args.key
 zenoh.init_logger()
 start = None
 end=None
-data1 = bytearray()
-for i in range(0, size):
-    data1.append(1)
-data1 = bytes(data1)
-data2 = bytearray()
-for i in range(0, size):
-    data2.append(2)
-data2 = bytes(data2)
-data3 = bytearray()
-for i in range(0, size):
-    data3.append(3)
-data3 = bytes(data3)
 congestion_control = CongestionControl.Block
 
 session = zenoh.open(conf)
@@ -85,19 +75,20 @@ rid = session.declare_expr(key)
 pub = session.declare_publication(rid)
 pattern=1
 print("Declaring key expression '{}'...".format(key))
-while True:
-    if pattern%3 ==1:
-     data=data1
-    elif pattern%3 ==2:
-     data=data2
-    else: 
-     data=data3
-     pattern=0
-     
+while pattern <10001:
+    start = datetime.datetime.now()
+    j_data = {}
+    payloaddata = bytearray()
+    for i in range(0, size):
+      payloaddata.append(random.randint(0,100))    
+    j_data['dataindex']=pattern
+    j_data['payload']=payloaddata.decode('utf-8')   
+    j_data['md5']=hashlib.md5(payloaddata).hexdigest()
+    j_data = json.dumps(j_data)
+    data=bytes(j_data,encoding='utf8')
     start = datetime.datetime.now()    
     session.put(rid, data, congestion_control=congestion_control)
-    pattern+=1
-    data=None
+    pattern+=1    
     time.sleep(0.01)
     end= datetime.datetime.now()
     #print(end-start)
