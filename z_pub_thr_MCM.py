@@ -75,20 +75,21 @@ rid = session.declare_expr(key)
 pub = session.declare_publication(rid)
 pattern=1
 print("Declaring key expression '{}'...".format(key))
-while pattern <10001:
+while pattern <5001:
     start = datetime.datetime.now()
     j_data = {}
     payloaddata = bytearray()
     for i in range(0, size):
-      payloaddata.append(random.randint(0,100))    
+      payloaddata.append(random.randint(0,1))    
     j_data['dataindex']=pattern
     j_data['payload']=payloaddata.decode('utf-8')   
     j_data['md5']=hashlib.md5(payloaddata).hexdigest()
     j_data = json.dumps(j_data)
-    data=bytes(j_data,encoding='utf8')
-    start = datetime.datetime.now()    
+    data=bytes(j_data,encoding='utf8')  
     session.put(rid, data, congestion_control=congestion_control)
     pattern+=1    
     time.sleep(0.01)
     end= datetime.datetime.now()
-    #print(end-start)
+    print(end-start)
+    print(sys.getsizeof(data))
+    #print(pattern)

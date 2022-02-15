@@ -46,7 +46,7 @@ parser.add_argument('--samples', '-s', dest='samples',
                     type=int,
                     help='Number of throughput measurements.')
 parser.add_argument('--number', '-n', dest='number',
-                    default=100,
+                    default=10,
                     metavar='NUMBER',
                     action='append',
                     type=int,
@@ -79,15 +79,15 @@ print(n)
 def print_stats(id):
     stop = datetime.now()
     #print("{:.6f} msgs/sec".format(n / (stop - start).total_seconds()))
-    print(">> [Subscriber] Received {})".format(id))
-    print(size[int(id)])
-    print(stop)
-    print(start[int(id)])
-    print((stop - start[int(id)]).total_seconds())
+    #print(">> [Subscriber] Received {})".format(id))
+    #print(size[int(id)])
+    #print(stop)
+    #print(start[int(id)])
+    #print((stop - start[int(id)]).total_seconds())
     print("{:.6f} M bytes/sec".format((size[int(id)]/(1024*1024)) / (stop - start[int(id)]).total_seconds()))
     p=createfolder('D:\\examples\\data\\',id)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
-    f = open(p+'\\throughput.txt_'+str(now)+'.txt','a')
+    f = open(p+'\\throughput_'+str(id)+'_'+str(now)+'.txt','a')
     f.write("{:.6f}\n".format((size[int(id)]/(1024*1024)) / (stop - start[int(id)]).total_seconds()))
     f.close()
 
@@ -108,7 +108,7 @@ def Checdataloss(data,id):
        print('ID :'+id+' loss data')
        p=createfolder('D:\\examples\\data\\',id)
        now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
-       f = open(p+'\\dataloss.txt_'+str(now)+'.txt','a')
+       f = open(p+'\\dataloss_'+str(id)+'_'+str(now)+'.txt','a')
        f.write(str(j_data['dataindex'])+' '+str(lastdataindex[int(id)]))      
        f.close()
     checkmd5=j_data['md5']
@@ -117,7 +117,7 @@ def Checdataloss(data,id):
        print('ID :'+id+' data content is wrong')
        p=createfolder('D:\\examples\\data\\',id)
        now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
-       f = open(p+'\\datawring.txt_'+str(now)+'.txt','a')
+       f = open(p+'\\datawrong_'+str(id)+'_'+str(now)+'.txt','a')
        f.write(j_data['md5']+' '+hashlib.md5(j_data['payload'].encode('utf-8')).hexdigest())      
        f.close()
     lastdataindex[int(id)]=j_data['dataindex']
@@ -126,12 +126,11 @@ def Checdataloss(data,id):
 def Checdlatency(substarttime,pubstarttime,id):       
      now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
      p=createfolder('D:\\examples\\data\\',id)
-     f = open(p+'\\overlatency_'+str(now)+'.txt','a')
+     f = open(p+'\\overlatency_'+str(id)+'_'+str(now)+'.txt','a')
      f.write('{:.6f}\n'.format((substarttime-pubstarttime).total_seconds()))
      f.close()
 
-def createfolder(folderpath,id):
-    global path
+def createfolder(folderpath,id):    
     if not os.path.exists(folderpath+str(id)):    
      os.makedirs(folderpath+str(id))
      #os.chmod(folderpath+str(id),0o777)
@@ -159,7 +158,7 @@ def listener(sample):
     Checdataloss(sample.payload,sourceid)   
     Checdlatency(substart,pubstart,sourceid)
     size[int(sourceid)] += sys.getsizeof(sample.payload)
-    #print(size[int(sourceid)])
+    print(size[int(sourceid)])
     thrcount[int(sourceid)] +=1
 
     
@@ -172,7 +171,17 @@ rid = session.declare_expr(key)#('/test/thr')
 teststart=datetime.now()
 sub = session.subscribe(rid, listener, reliablity=Reliability.Reliable, mode=SubMode.Push)
 
-time.sleep(600)
+print("Enter 'q' to quit...")
+c = '\0'
+while c != 'q':
+    c = sys.stdin.read(1)
+    if c == '':
+        time.sleep(1)
+
+#time.sleep(600)
+for i in range(8):
+  print(lastdataindex[i])
+
 
 session.undeclare_expr(rid)
 session.close()
