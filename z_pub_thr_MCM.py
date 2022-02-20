@@ -18,6 +18,7 @@ import json
 import zenoh
 import random
 import hashlib
+import psutil
 from zenoh import config, CongestionControl
 
 # --- Command line argument parsing --- --- --- --- --- ---
@@ -73,23 +74,43 @@ session = zenoh.open(conf)
 rid = session.declare_expr(key)
 
 pub = session.declare_publication(rid)
+totalpattern=1000
+payloaddata =[]
+raw=bytearray()
+#for i in range(0, size):
+#     raw.append(1)
+for i in range(0, totalpattern):
+    raw=bytearray(size)
+    raw[random.randint(0,size-1)]=random.randint(0,9)
+    payloaddata.append(raw)
+md5=[]
+for i in range(0, totalpattern):
+  md5.append(hashlib.md5(payloaddata[i]).hexdigest())
+  #print(md5[i])
 pattern=1
 print("Declaring key expression '{}'...".format(key))
-while pattern <5001:
+
+while pattern <totalpattern+1:
     start = datetime.datetime.now()
-    j_data = {}
-    payloaddata = bytearray()
-    for i in range(0, size):
-      payloaddata.append(random.randint(0,1))    
+    j_data = {}   
     j_data['dataindex']=pattern
-    j_data['payload']=payloaddata.decode('utf-8')   
-    j_data['md5']=hashlib.md5(payloaddata).hexdigest()
+    j_data['payload']=payloaddata[pattern-1].decode('utf-8')   
+    j_data['md5']=md5[pattern-1]
+    j_data['CPU_Usage']=psutil.cpu_percent(interval=None, percpu=False)
+    j_data['RAM_Usage']=psutil.virtual_memory()[2]
+    j_data['totalindex']=totalpattern
     j_data = json.dumps(j_data)
     data=bytes(j_data,encoding='utf8')  
     session.put(rid, data, congestion_control=congestion_control)
     pattern+=1    
-    time.sleep(0.01)
+    time.sleep(0.05)
     end= datetime.datetime.now()
-    print(end-start)
-    print(sys.getsizeof(data))
-    #print(pattern)
+#    print(end-start)
+#    print(sys.getsizeof(data))
+#    print(pattern)
+print("Enter 'q' to quit...")
+c = '\0'
+while c != 'q':
+    c = sys.stdin.read(1)
+    if c == '':
+        time.sleep(1)

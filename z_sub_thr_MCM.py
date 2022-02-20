@@ -46,7 +46,7 @@ parser.add_argument('--samples', '-s', dest='samples',
                     type=int,
                     help='Number of throughput measurements.')
 parser.add_argument('--number', '-n', dest='number',
-                    default=10,
+                    default=100,
                     metavar='NUMBER',
                     action='append',
                     type=int,
@@ -84,8 +84,8 @@ def print_stats(id):
     #print(stop)
     #print(start[int(id)])
     #print((stop - start[int(id)]).total_seconds())
-    print("{:.6f} M bytes/sec".format((size[int(id)]/(1024*1024)) / (stop - start[int(id)]).total_seconds()))
-    p=createfolder('D:\\examples\\data\\',id)
+    #print("{:.6f} M bytes/sec".format((size[int(id)]/(1024*1024)) / (stop - start[int(id)]).total_seconds()))
+    p=createfolder('C:\\examples\\data\\',id)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
     f = open(p+'\\throughput_'+str(id)+'_'+str(now)+'.txt','a')
     f.write("{:.6f}\n".format((size[int(id)]/(1024*1024)) / (stop - start[int(id)]).total_seconds()))
@@ -100,13 +100,14 @@ nm = 0
 size=[0]*8
 start=[None]*8
 lastdataindex=[0]*8
+dataindex=[1]*8
 def Checdataloss(data,id):
     j_data={}
     j_data=json.loads(data)
     if (j_data['dataindex']-lastdataindex[int(id)])!=1:
        print(j_data['dataindex']-lastdataindex[int(id)]) 
        print('ID :'+id+' loss data')
-       p=createfolder('D:\\examples\\data\\',id)
+       p=createfolder('C:\\examples\\data\\',id)
        now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
        f = open(p+'\\dataloss_'+str(id)+'_'+str(now)+'.txt','a')
        f.write(str(j_data['dataindex'])+' '+str(lastdataindex[int(id)]))      
@@ -115,17 +116,29 @@ def Checdataloss(data,id):
     rawdata=j_data['payload']
     if j_data['md5']!=hashlib.md5(j_data['payload'].encode('utf-8')).hexdigest():
        print('ID :'+id+' data content is wrong')
-       p=createfolder('D:\\examples\\data\\',id)
+       p=createfolder('C:\\examples\\data\\',id)
        now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
        f = open(p+'\\datawrong_'+str(id)+'_'+str(now)+'.txt','a')
        f.write(j_data['md5']+' '+hashlib.md5(j_data['payload'].encode('utf-8')).hexdigest())      
        f.close()
+    p=createfolder('C:\\examples\\data\\',id)
+    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+    f = open(p+'\\CPU_Usage_'+str(id)+'_'+str(now)+'.txt','a')
+    f.write(str(j_data['CPU_Usage'])+'\n')
+    p=createfolder('C:\\examples\\data\\',id)
+    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+    f = open(p+'\\RAM_Usage_'+str(id)+'_'+str(now)+'.txt','a')
+    f.write(str(j_data['RAM_Usage'])+'\n')
+    p=createfolder('C:\\examples\\data\\',id)
+    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+    f = open(p+'\\Index_'+str(id)+'_'+str(now)+'.txt','a')
+    f.write(str(j_data['dataindex'])+'\n')  
     lastdataindex[int(id)]=j_data['dataindex']
-
+    
         
 def Checdlatency(substarttime,pubstarttime,id):       
      now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
-     p=createfolder('D:\\examples\\data\\',id)
+     p=createfolder('C:\\examples\\data\\',id)
      f = open(p+'\\overlatency_'+str(id)+'_'+str(now)+'.txt','a')
      f.write('{:.6f}\n'.format((substarttime-pubstarttime).total_seconds()))
      f.close()
@@ -158,9 +171,9 @@ def listener(sample):
     Checdataloss(sample.payload,sourceid)   
     Checdlatency(substart,pubstart,sourceid)
     size[int(sourceid)] += sys.getsizeof(sample.payload)
-    print(size[int(sourceid)])
+    #print(size[int(sourceid)])
     thrcount[int(sourceid)] +=1
-
+    dataindex[int(sourceid)] +=1
     
 # initiate logging
 zenoh.init_logger()
@@ -171,16 +184,17 @@ rid = session.declare_expr(key)#('/test/thr')
 teststart=datetime.now()
 sub = session.subscribe(rid, listener, reliablity=Reliability.Reliable, mode=SubMode.Push)
 
-print("Enter 'q' to quit...")
+#print("Enter 'q' to quit...")
 c = '\0'
-while c != 'q':
-    c = sys.stdin.read(1)
-    if c == '':
-        time.sleep(1)
+while True:
+#    c = sys.stdin.read(1)
+    for i in range(8):
+      print("Device:{} current total index {} \r".format(i,dataindex[i]),end="\n")
+#    if c == '':
+    time.sleep(1)
 
 #time.sleep(600)
-for i in range(8):
-  print(lastdataindex[i])
+
 
 
 session.undeclare_expr(rid)
