@@ -12,13 +12,15 @@
 
 import sys
 import time
-import datetime
+from datetime import datetime,timedelta
 import argparse
 import json
 import zenoh
 import random
 import hashlib
 import psutil
+import math
+import os
 from zenoh import config, CongestionControl
 
 # --- Command line argument parsing --- --- --- --- --- ---
@@ -65,8 +67,9 @@ key = args.key
 
 # initiate logging
 zenoh.init_logger()
-start = None
-end=None
+start =0
+teststart=0
+end=0
 congestion_control = CongestionControl.Block
 
 session = zenoh.open(conf)
@@ -74,7 +77,11 @@ session = zenoh.open(conf)
 rid = session.declare_expr(key)
 
 pub = session.declare_publication(rid)
-totalpattern=1000
+pid = os.getpid()
+python_process = psutil.Process(pid)
+testperiod=60
+currentspendtime=0
+totalpattern=100
 payloaddata =[]
 raw=bytearray()
 #for i in range(0, size):
@@ -89,23 +96,28 @@ for i in range(0, totalpattern):
   #print(md5[i])
 pattern=1
 print("Declaring key expression '{}'...".format(key))
-
-while pattern <totalpattern+1:
-    start = datetime.datetime.now()
+teststart = datetime.now()
+while  currentspendtime<60:
+#while True:
+    start = datetime.now()
     j_data = {}   
     j_data['dataindex']=pattern
     j_data['payload']=payloaddata[pattern-1].decode('utf-8')   
     j_data['md5']=md5[pattern-1]
-    j_data['CPU_Usage']=psutil.cpu_percent(interval=None, percpu=False)
-    j_data['RAM_Usage']=psutil.virtual_memory()[2]
-    j_data['totalindex']=totalpattern
+    j_data['CPU_Usage']=python_process.cpu_percent()#psutil.cpu_percent(interval=None, percpu=False)
+    j_data['RAM_Usage']=python_process.memory_info()[0]/(1024**2)#psutil.virtual_memory()[2]
+    j_data['timestamp']=datetime.now().isoformat()
     j_data = json.dumps(j_data)
     data=bytes(j_data,encoding='utf8')  
     session.put(rid, data, congestion_control=congestion_control)
     pattern+=1    
     time.sleep(0.05)
-    end= datetime.datetime.now()
-#    print(end-start)
+    end= datetime.now()
+    if (pattern >totalpattern):
+        pattern=1
+    currentspendtime=int((end-teststart).total_seconds())
+    print(currentspendtime)
+    print(end-start)
 #    print(sys.getsizeof(data))
 #    print(pattern)
 print("Enter 'q' to quit...")

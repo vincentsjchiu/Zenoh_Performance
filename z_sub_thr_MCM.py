@@ -19,6 +19,7 @@ import zenoh
 import os
 import re
 import hashlib
+import psutil
 from zenoh import  Reliability, SubMode
 
 # --- Command line argument parsing --- --- --- --- --- ---
@@ -104,7 +105,7 @@ dataindex=[1]*8
 def Checdataloss(data,id):
     j_data={}
     j_data=json.loads(data)
-    if (j_data['dataindex']-lastdataindex[int(id)])!=1:
+    if (j_data['dataindex']-lastdataindex[int(id)])!=1|(j_data['dataindex']-lastdataindex[int(id)])!=-99:
        print(j_data['dataindex']-lastdataindex[int(id)]) 
        print('ID :'+id+' loss data')
        p=createfolder('C:\\examples\\data\\',id)
@@ -125,14 +126,17 @@ def Checdataloss(data,id):
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
     f = open(p+'\\CPU_Usage_'+str(id)+'_'+str(now)+'.txt','a')
     f.write(str(j_data['CPU_Usage'])+'\n')
+    f.close()
     p=createfolder('C:\\examples\\data\\',id)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
     f = open(p+'\\RAM_Usage_'+str(id)+'_'+str(now)+'.txt','a')
     f.write(str(j_data['RAM_Usage'])+'\n')
+    f.close()
     p=createfolder('C:\\examples\\data\\',id)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
     f = open(p+'\\Index_'+str(id)+'_'+str(now)+'.txt','a')
-    f.write(str(j_data['dataindex'])+'\n')  
+    f.write(str(j_data['dataindex'])+'\n')
+    f.close()
     lastdataindex[int(id)]=j_data['dataindex']
     
         
@@ -155,9 +159,11 @@ def listener(sample):
 #          .format(sample.key_expr))
     global n, m, nm ,size,f,now,substart ,pubstart,sourceid
     sourceid=''.join(re.findall('[0-9]',str(sample.key_expr)))
+    time={}
+    time=json.loads(sample.payload)   
     ctime = '(not specified)' if sample.source_info is None or sample.timestamp is None else datetime.fromtimestamp(
     sample.timestamp.time)
-    pubstart=ctime
+    pubstart=datetime.fromisoformat(time['timestamp'])
     if thrcount[int(sourceid)] == 0: 
         start[int(sourceid)] = datetime.now()
         substart=start[int(sourceid)] 
@@ -181,6 +187,9 @@ zenoh.init_logger()
 session = zenoh.open(conf)
 
 rid = session.declare_expr(key)#('/test/thr')
+pid = os.getpid()
+python_process = psutil.Process(pid)
+print(pid)
 teststart=datetime.now()
 sub = session.subscribe(rid, listener, reliablity=Reliability.Reliable, mode=SubMode.Push)
 
@@ -191,7 +200,17 @@ while True:
     for i in range(8):
       print("Device:{} current total index {} \r".format(i,dataindex[i]),end="\n")
 #    if c == '':
-    time.sleep(1)
+    p=createfolder('C:\\examples\\data\\Sub\\',0)
+    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+    f = open(p+'\\Sub_CPU_Usage_'+str(now)+'.txt','a')
+    f.write(str(python_process.cpu_percent())+'\n')
+    f.close()
+    p=createfolder('C:\\examples\\data\\Sub\\',0)
+    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+    f = open(p+'\\Sub_RAM_Usage_'+str(now)+'.txt','a')
+    f.write(str(python_process.memory_info()[0]/(1024**2))+'\n')
+    f.close()
+    time.sleep(10)
 
 #time.sleep(600)
 
