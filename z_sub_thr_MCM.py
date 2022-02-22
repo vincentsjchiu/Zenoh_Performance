@@ -105,13 +105,13 @@ dataindex=[1]*8
 def Checdataloss(data,id):
     j_data={}
     j_data=json.loads(data)
-    if (j_data['dataindex']-lastdataindex[int(id)])!=1|(j_data['dataindex']-lastdataindex[int(id)])!=-99:
+    if (j_data['dataindex']-lastdataindex[int(id)])!=1 and (j_data['dataindex']-lastdataindex[int(id)])!=-99:
        print(j_data['dataindex']-lastdataindex[int(id)]) 
        print('ID :'+id+' loss data')
        p=createfolder('C:\\examples\\data\\',id)
        now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
        f = open(p+'\\dataloss_'+str(id)+'_'+str(now)+'.txt','a')
-       f.write(str(j_data['dataindex'])+' '+str(lastdataindex[int(id)]))      
+       f.write(str(j_data['dataindex'])+'_'+str(lastdataindex[int(id)])+'\n')      
        f.close()
     checkmd5=j_data['md5']
     rawdata=j_data['payload']
@@ -120,7 +120,7 @@ def Checdataloss(data,id):
        p=createfolder('C:\\examples\\data\\',id)
        now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
        f = open(p+'\\datawrong_'+str(id)+'_'+str(now)+'.txt','a')
-       f.write(j_data['md5']+' '+hashlib.md5(j_data['payload'].encode('utf-8')).hexdigest())      
+       f.write(j_data['md5']+'_'+hashlib.md5(j_data['payload'].encode('utf-8')).hexdigest()+'\n')      
        f.close()
     p=createfolder('C:\\examples\\data\\',id)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
@@ -137,6 +137,11 @@ def Checdataloss(data,id):
     f = open(p+'\\Index_'+str(id)+'_'+str(now)+'.txt','a')
     f.write(str(j_data['dataindex'])+'\n')
     f.close()
+#    p=createfolder('C:\\examples\\data\\',id)
+#    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+#    f = open(p+'\\rawdata_'+str(id)+'_'+str(now)+'.txt','a')
+#    f.write(j_data['md5']+' \n')      
+#    f.close()
     lastdataindex[int(id)]=j_data['dataindex']
     
         
@@ -160,7 +165,7 @@ def listener(sample):
     global n, m, nm ,size,f,now,substart ,pubstart,sourceid
     sourceid=''.join(re.findall('[0-9]',str(sample.key_expr)))
     time={}
-    time=json.loads(sample.payload)   
+    time=json.loads(sample.payload) 
     ctime = '(not specified)' if sample.source_info is None or sample.timestamp is None else datetime.fromtimestamp(
     sample.timestamp.time)
     pubstart=datetime.fromisoformat(time['timestamp'])

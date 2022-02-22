@@ -25,12 +25,12 @@ for index in range(8):
   
   y.append(np.loadtxt(list_of_files[0]))
   #y.append(list_of_files[0])
-print(y[1])
 
-for pindex in range(8):
-  plt.plot(range(0,len(y[pindex])),abs(y[pindex]))
+for pindex in range(0,8):
+  print(pindex)
+  plt.plot((0.064/3600)*np.arange(0,len(y[pindex])),y[pindex])
 
-plt.xlabel("Index ",fontsize=13)
+plt.xlabel("Time (hours)",fontsize=13)
 plt.ylabel("Latency (sec)",fontsize=13)
-plt.title('Latency Between Subscriberand Publishers')
+plt.title('Latency Between Subscriber and Publishers')
 plt.show()

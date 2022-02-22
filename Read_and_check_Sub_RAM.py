@@ -28,9 +28,10 @@ for index in range(1):
 
 
 for pindex in range(1):
-  plt.plot(range(0,len(y[pindex])),abs(y[pindex]))
+  plt.plot((10/3600)*np.arange(0,len(y[pindex])),y[pindex])
 
-plt.xlabel("Index ",fontsize=13)
+plt.xlabel("Time (hours) ",fontsize=13)
+plt.xlim(0,5.5)
 plt.ylabel("Memory Usage (MB)",fontsize=13)
-plt.title('Subscriber Memory Usage')
+plt.title('Memory Usage of Subscriber')
 plt.show()

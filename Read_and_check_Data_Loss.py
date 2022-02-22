@@ -19,7 +19,7 @@ for index in range(8):
                        key = os.path.getmtime)
 
   for i in range(len(list_of_files)):
-    list_of_files = filter( os.path.isfile,glob.glob(dir_name + 'RAM_*') )
+    list_of_files = filter( os.path.isfile,glob.glob(dir_name + 'Index_*') )
 # Sort list of files based on last modification time in ascending order
     list_of_files = sorted( list_of_files,key = os.path.getmtime)
   
@@ -30,9 +30,11 @@ for index in range(8):
 
 for pindex in range(8):
   print(len(y[pindex]))
-  plt.plot((0.064/3600)*np.arange(0,len(y[pindex])),y[pindex])
+  temp=y[pindex]
+  diff=[temp[i+1]-temp[i] for i in range(len(temp)-1)]
+  for index in range(len(diff)):
+#    print(v[index])
+    if diff[index]!=1 and diff[index]!=-99:
+       print("Doss Data")
 
-plt.xlabel("Time (hours) ",fontsize=13)
-plt.ylabel("Memory Usage (MB)",fontsize=13)
-plt.title('Memory Usage of Each Publisher ')
-plt.show()
+print("Done")
