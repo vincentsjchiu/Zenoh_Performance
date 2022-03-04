@@ -208,12 +208,30 @@ while True:
     p=createfolder('C:\\examples\\data\\Sub\\',0)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
     f = open(p+'\\Sub_CPU_Usage_'+str(now)+'.txt','a')
-    f.write(str(python_process.cpu_percent())+'\n')
+    f.write(str(python_process.cpu_percent()/psutil.cpu_count())+'\n')
     f.close()
     p=createfolder('C:\\examples\\data\\Sub\\',0)
     now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
     f = open(p+'\\Sub_RAM_Usage_'+str(now)+'.txt','a')
     f.write(str(python_process.memory_info()[0]/(1024**2))+'\n')
+    f.close()
+
+    s1 = psutil.net_io_counters(pernic=True)['乙太網路']
+    time.sleep(1)
+    s2 = psutil.net_io_counters(pernic=True)['乙太網路']
+    recv = s2.bytes_recv - s1.bytes_recv
+    sent = s2.bytes_sent - s1.bytes_sent
+    print(str('Receive %3.5f' % (recv / (1024**2))) + 'MB/s')
+    print(str('Sent %3.5f' % (sent / (1024**2))) + 'MB/s')
+    p=createfolder('C:\\examples\\data\\Sub\\',0)
+    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+    f = open(p+'\\Sub_Net_Traffic_Receive_'+str(now)+'.txt','a')
+    f.write(str(recv / (1024**2))+'\n')
+    f.close()
+    p=createfolder('C:\\examples\\data\\Sub\\',0)
+    now = teststart.strftime("%Y_%m_%d_%H_%M_%S_%f")
+    f = open(p+'\\Sub_Net_Traffic_Sent_'+str(now)+'.txt','a')
+    f.write(str(sent / (1024**2))+'\n')
     f.close()
     time.sleep(10)
 

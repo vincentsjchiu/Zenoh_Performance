@@ -97,8 +97,8 @@ for i in range(0, totalpattern):
 pattern=1
 print("Declaring key expression '{}'...".format(key))
 teststart = datetime.now()
-while  currentspendtime<60:
-#while True:
+#while  currentspendtime<18000:
+while True:
     start = datetime.now()
     j_data = {}   
     j_data['dataindex']=pattern
@@ -111,7 +111,7 @@ while  currentspendtime<60:
     data=bytes(j_data,encoding='utf8')  
     session.put(rid, data, congestion_control=congestion_control)
     pattern+=1    
-    time.sleep(0.05)
+    time.sleep(0.06)
     end= datetime.now()
     if (pattern >totalpattern):
         pattern=1
